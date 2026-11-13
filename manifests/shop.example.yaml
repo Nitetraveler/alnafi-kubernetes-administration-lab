@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shop-config
+  namespace: shop
+data:
+  APP_NAME: shop
+  BACKEND_URL: http://shop-backend:5678
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shop-secret
+  namespace: shop
+type: Opaque
+stringData:
+  APP_TOKEN: REPLACE_WITH_A_LOCAL_SECRET
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: shop-quota
+  namespace: shop
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 512Mi
+    limits.cpu: "2"
+    limits.memory: 1Gi
+    pods: "20"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop-backend
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shop-backend
+  template:
+    metadata:
+      labels:
+        app: shop-backend
+    spec:
+      containers:
+      - name: backend
+        image: hashicorp/http-echo:1.0.0
+        args:
+        - "-text=Hello from Shop Backend"
+        ports:
+        - containerPort: 5678
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shop-backend
+  namespace: shop
+spec:
+  selector:
+    app: shop-backend
+  ports:
+  - port: 5678
+    targetPort: 5678
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop-frontend
+  namespace: shop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shop-frontend
+  template:
+    metadata:
+      labels:
+        app: shop-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:1.27
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: shop-config
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 64Mi
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10

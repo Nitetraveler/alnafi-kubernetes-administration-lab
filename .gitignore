@@ -1,0 +1,27 @@
+# Credentials and certificates
+*.kubeconfig
+ci.kubeconfig
+ci-ca.crt
+certs/
+*.key
+*.crt
+*.csr
+*.pem
+
+# Cluster backups and downloaded tools
+backups/
+bin/
+*.db
+
+# Original file contains a demo Secret value
+manifests/shop.yaml
+
+# Accidental nested directory
+~/
+
+# Local files
+.env
+*.log
+*.swp
+*.swo
+.DS_Store
